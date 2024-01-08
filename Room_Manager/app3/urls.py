@@ -1,8 +1,9 @@
 
 from django.urls import path
-from .views import StatusDetail, StatusList
+from .views import GetAvailableServerView, JoinServerView, ReplaceServerView
 
 urlpatterns = [
-    path('status/', StatusList.as_view()),
-    path('status/<int:pk>/', StatusDetail.as_view()),
+    path('status/', GetAvailableServerView.as_view(), name='get_available_server'),
+    path('join_server/', JoinServerView.as_view(), name='join_server'),
+    path('replace_server/', ReplaceServerView.as_view(), name='replace_server'),
 ]
