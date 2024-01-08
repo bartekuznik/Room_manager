@@ -25,8 +25,10 @@ class GetAvailableServerView(generics.ListAPIView):
             Status.objects.create(ip=f"Server_{current_server_count + i + 1}", occupation=0, status='Available')
 
     def get_queryset(self):
-        # czy mamy 4 serwera
-        self.check_and_create_servers()
+        # Check and create servers if less than 4
+        if Status.objects.count() < 4:
+            for i in range(4 - Status.objects.count()):
+                Status.objects.create(ip=f"Server_{i+1}", status='offline', occupation=0)
         return Status.objects.all()
 
     def list(self, request, *args, **kwargs):
@@ -34,25 +36,33 @@ class GetAvailableServerView(generics.ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
-class JoinServerView(APIView):
+class ManageServerView(APIView):
     def post(self, request, *args, **kwargs):
-        server_id = request.data.get('server_id')
+        server_ip = request.data.get('server_ip')
 
         try:
-            server = Status.objects.get(id=server_id)
-            occupation = int(server.occupation)
-            if occupation < 4:
-                server.occupation = occupation + 1
-                server.save()
-                return Response(StatusSerializer(server).data, status=status.HTTP_200_OK)
+            server = Status.objects.get(ip=server_ip)
+            occupation = int(server.occupation) if server.occupation.isdigit() else 0
+
+            if server.status == 'offline':
+                server.status = 'online'
+                occupation = 1
             else:
-                return Response({'error': 'Server is full'}, status=status.HTTP_400_BAD_REQUEST)
+                if occupation < 4:
+                    occupation += 1
+                else:
+                    return Response({'message': 'Server is full', 'ip': server.ip, 'status': server.status, 'occupation': occupation}, status=status.HTTP_400_BAD_REQUEST)
+            
+            server.occupation = occupation
+            server.save()
+            return Response({'message': 'Server status updated', 'ip': server.ip, 'status': server.status, 'occupation': occupation}, status=status.HTTP_200_OK)
+
         except (Status.DoesNotExist, ValueError):
             return Response({'error': 'Server not found or invalid data'}, status=status.HTTP_404_NOT_FOUND)
-        
+
 class ReplaceServerView(APIView):
     def post(self, request, *args, **kwargs):
-        server_id = request.data.get('server_id')
-        Status.objects.filter(id=server_id).delete()
-        new_server = Status.objects.create(ip="Server_" + str(server_id), occupation=0, status='Available')
+        server_ip = request.data.get('server_ip')
+        Status.objects.get(ip=server_ip).delete()
+        new_server = Status.objects.create(ip=f"{server_ip}", status='offline', occupation=0)
         return Response(StatusSerializer(new_server).data, status=status.HTTP_201_CREATED)
