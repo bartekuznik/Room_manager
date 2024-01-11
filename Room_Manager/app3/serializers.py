@@ -1,11 +1,10 @@
 from rest_framework import serializers
-from .models import Status
+from .models import Server
 
-class StatusSerializer(serializers.ModelSerializer):
+class ServerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Status
+        model = Server
         fields = [
             'ip',
             'occupation',
-            'status',
         ]
