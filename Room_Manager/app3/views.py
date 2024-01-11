@@ -19,7 +19,7 @@ class JoinServerView(APIView):
         if not server:
             return Response({'message': 'Server not found'}, status=404)
 
-        new_occupancy = request.data.get('occupancy')
+        new_occupancy = request.data.get('occupation')
         new_ip = request.data.get('ip')
         if new_occupancy is not None:
             try:
@@ -27,16 +27,16 @@ class JoinServerView(APIView):
                 server.occupancy = new_occupancy
                 server.ip = new_ip
                 server.save()
-                message = 'Server occupancy updated'
+                message = 'Server occupation updated'
             except ValueError:
-                message = 'Invalid occupancy value'
+                message = 'Invalid occupation value'
         else:
-            message = 'Occupancy not provided'
+            message = 'Occupation not provided'
 
         response_data = {
             'message': message,
-            'server_ip': server.ip,
-            'occupancy': server.occupancy
+            'ip': server.ip,
+            'occupation': server.occupancy
         }
 
         return Response(response_data)
