@@ -3,40 +3,35 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Server
 from .serializers import ServerSerializer
+import random
+
 
 class ServerStatusView(APIView):
     def get(self, request):
-        server, created = Server.objects.get_or_create(
-            ip='0', 
-            defaults={'occupation': 0}
-        )
+        ports = [9000, 9001, 9002, 9003]
+
+        for port in ports:
+            Server.objects.get_or_create(ip=str(port), defaults={'occupation': random.uniform(0, 3)})
+
+        all_servers = Server.objects.all()
+        serializer = ServerSerializer(all_servers, many=True)
+        return Response(serializer.data)
+    
+class UpdateServerView(APIView):
+    def post(self, request):
+        ip = request.data.get('ip')
+        new_occupation = request.data.get('new_occupation')
+        if ip is None or new_occupation is None:
+            return Response({'message': 'IP and new occupation must be provided'}, status=400)
+
+        try:
+            new_occupation = int(new_occupation)
+        except ValueError:
+            return Response({'message': 'Invalid new occupation value'}, status=400)
+
+        server, created = Server.objects.get_or_create(ip=ip)
+        server.occupation = new_occupation
+        server.save()
+
         serializer = ServerSerializer(server)
         return Response(serializer.data)
-
-class JoinServerView(APIView):
-    def post(self, request):
-        server = Server.objects.first()
-        if not server:
-            return Response({'message': 'Server not found'}, status=404)
-
-        new_occupancy = request.data.get('occupation')
-        new_ip = request.data.get('ip')
-        if new_occupancy is not None:
-            try:
-                new_occupancy = int(new_occupancy)
-                server.occupancy = new_occupancy
-                server.ip = new_ip
-                server.save()
-                message = 'Server occupation updated'
-            except ValueError:
-                message = 'Invalid occupation value'
-        else:
-            message = 'Occupation not provided'
-
-        response_data = {
-            'message': message,
-            'ip': server.ip,
-            'occupation': server.occupancy
-        }
-
-        return Response(response_data)
