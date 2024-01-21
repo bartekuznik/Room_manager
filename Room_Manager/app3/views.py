@@ -8,7 +8,7 @@ import random
 
 class ServerStatusView(APIView):
     def get(self, request):
-        ports = [9000, 9001, 9002, 9003]
+        ports = [9000]
 
         for port in ports:
             Server.objects.get_or_create(ip=str(port), defaults={'occupation': random.uniform(0, 3)})
